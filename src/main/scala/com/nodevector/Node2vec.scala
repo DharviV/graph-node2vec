@@ -60,29 +60,29 @@ object Node2vec extends Serializable {
     this
   }
   
-  def initTransitionProb(): this.type = {
-    val bcP = context.broadcast(config.p)
-    val bcQ = context.broadcast(config.q)
+//  def initTransitionProb(): this.type = {
+ //   val bcP = context.broadcast(config.p)
+ //   val bcQ = context.broadcast(config.q)
     
-    graph = Graph(indexedNodes, indexedEdges)
-            .mapVertices[NodeAttr] { case (vertexId, clickNode) =>
-              val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
-              val nextNodeIndex = GraphOps.drawAlias(j, q)
-              clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
+  //  graph = Graph(indexedNodes, indexedEdges)
+          //  .mapVertices[NodeAttr] { case (vertexId, clickNode) =>
+           //   val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
+           //   val nextNodeIndex = GraphOps.drawAlias(j, q)
+          //    clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
               
-              clickNode
-            }
-            .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>
-              val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
-              edgeTriplet.attr.J = j
-              edgeTriplet.attr.q = q
-              edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
+          //    clickNode
+          //  }
+          //  .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>
+           //   val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
+           //   edgeTriplet.attr.J = j
+         //     edgeTriplet.attr.q = q
+       //       edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
               
-              edgeTriplet.attr
-            }.cache
+     //         edgeTriplet.attr
+   //         }.cache
     
-    this
-  }
+ //   this
+//  }
   
   def randomWalk(): this.type = {
     val edge2attr = graph.triplets.map { edgeTriplet =>

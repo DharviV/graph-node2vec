@@ -1,8 +1,30 @@
 package com.nodevector.graph
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.graphx.{EdgeTriplet, Graph, _}
+import com.nodevector.graph.{GraphOps, EdgeAttr, NodeAttr}
+import com.nodevector.Main
+
+
+
 
 import scala.collection.mutable.ArrayBuffer
 
 object GraphOps {
+
+  var context: SparkContext = null
+  var config: Main.Params = null
+
+
+
+  def setup(context: SparkContext, param: Main.Params) = {
+        this.context = context
+        this.config = param
+                
+        this
+             }
+
+
   def setupAlias(nodeWeights: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
     val K = nodeWeights.length
     val J = Array.fill(K)(0)
@@ -66,4 +88,39 @@ object GraphOps {
       (srcId, Array((dstId, weight)))
     )
   }
+
+
+
+
+
+
+
+
+def initTransitionProb(): this.type = {
+      val bcP = context.broadcast(config.p)
+          val bcQ = context.broadcast(config.q)
+
+val graph = Graph(indexedNodes, indexedEdges)
+            .mapVertices[NodeAttr] { case (vertexId, clickNode) =>
+                            val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
+                                          val nextNodeIndex = GraphOps.drawAlias(j, q)
+                                                        clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
+                                                                      
+                                                                      clickNode
+                                                                                  }
+
+
+
+
+ .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
+                 edgeTriplet.attr.J = j
+                               edgeTriplet.attr.q = q
+                                             edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
+                                                           
+                                                           edgeTriplet.attr
+                                                                       }.cache
+
+
+                    this }
+
 }
