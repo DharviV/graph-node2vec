@@ -1,21 +1,16 @@
 package com.nodevector
 
-import com.nodevector.Main.Params
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.feature.{Word2Vec, Word2VecModel}
 import org.apache.spark.rdd.RDD
-import com.nodevector.common.Property
 
 object Word2vec extends Serializable {
-  var context: SparkContext = _
-  var config: Params = _
-  var model: Word2VecModel = _
+  var context: SparkContext = null
   var word2vec = new Word2Vec()
-  var examples: RDD[Iterable[String]] = _
+  var model: Word2VecModel = null
   
   def setup(context: SparkContext, param: Main.Params): this.type = {
     this.context = context
-    this.config = param
     /**
       * model = sg
       * update = hs
@@ -33,33 +28,28 @@ object Word2vec extends Serializable {
     this
   }
   
-  def read(path: String): this.type = {
-    examples = context.textFile(path).repartition(200).map (_.split ("\\s").toIterable)
-    this
-  }
-  def readFromRdd(randomPaths: RDD[String]): this.type = {
-    examples = randomPaths.map (_.split ("\\s").toIterable)
-    this
+  def read(path: String): RDD[Iterable[String]] = {
+    context.textFile(path).repartition(200).map(_.split("\\s").toSeq)
   }
   
-  def fit(): this.type = {
-    model = word2vec.fit(examples)
+  def fit(input: RDD[Iterable[String]]): this.type = {
+    model = word2vec.fit(input)
+    
     this
   }
   
-  def save(): this.type = {
-    model.save(context, s"${config.output}.${Property.modelSuffix}")
-    context.parallelize(model.getVectors.toList).map { case (nodeId, vector) =>
-              s"$nodeId\t${vector.mkString(",")}"
-            }.saveAsTextFile(s"${config.output}.${Property.vectorSuffix}")
-  
+  def save(outputPath: String): this.type = {
+    model.save(context, s"$outputPath.bin")
     this
   }  
   
   def load(path: String): this.type = {
     model = Word2VecModel.load(context, path)
+    
     this
   }
+  
+  def getVectors = this.model.getVectors
   
 }
 

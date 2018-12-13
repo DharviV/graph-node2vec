@@ -1,12 +1,9 @@
 package com.nodevector
 
 import java.io.Serializable
-
-import com.nodevector.graph.GraphOps
 import org.apache.spark.{SparkContext, SparkConf}
 import scopt.OptionParser
 import com.nodevector.lib.AbstractParams
-import org.apache.spark.rdd.RDD
 
 object Main {
   object Command extends Enumeration {
@@ -21,13 +18,16 @@ object Main {
                     dim: Int = 128,
                     window: Int = 10,
                     walkLength: Int = 50,
+
+
                     numWalks: Int = 10,
                     p: Double = 1.0,
                     q: Double = 1.0,
-                    weighted: Boolean = false,
+
+                    weighted: Boolean = true,
                     directed: Boolean = false,
                     degree: Int = 30,
-                    indexed: Boolean = false,
+                    indexed: Boolean = true,
                     nodePath: String = null,
                     input: String = null,
                     output: String = null,
@@ -97,24 +97,22 @@ object Main {
       val conf = new SparkConf().setAppName("Node2Vec")
       val context: SparkContext = new SparkContext(conf)
       
-      GraphOps.setup(context, param)
       Node2vec.setup(context, param)
-      Word2vec.setup(context, param)
       
       param.cmd match {
-        case Command.node2vec => 
-          val graph = Node2vec.loadGraph()
-          val randomPaths: RDD[String] = Node2vec.randomWalk(graph)
-          Node2vec.save(randomPaths)
-          Word2vec.readFromRdd(randomPaths).fit().save()
-        case Command.randomwalk =>
-          val graph = Node2vec.loadGraph()
-          val randomPaths: RDD[String] = Node2vec.randomWalk(graph)
-          Node2vec.save(randomPaths)
-          
+        case Command.node2vec => Node2vec.load()
+                                         .initTransitionProb()
+                                         .randomWalk()
+                                         .embedding()
+                                         .save()
+        case Command.randomwalk => Node2vec.load()
+                                           .initTransitionProb()
+                                           .randomWalk()
+                                           .saveRandomPath()
         case Command.embedding => {
-          val randomPaths = Word2vec.read(param.input)
-          Word2vec.fit().save()
+          val randomPaths = Word2vec.setup(context, param).read(param.input)
+          Word2vec.fit(randomPaths).save(param.output)
+          Node2vec.loadNode2Id(param.nodePath).saveVectors()
         }
       }
     } getOrElse {
