@@ -16,6 +16,8 @@ $ git clone <url>
 $ mvn clean package
 ```
 
+Running the aforementioned commands creates the jar file in the following location: "graph-node2vec/target"
+
 ####  Input
 
 The repository consists of a sample input file, inputnodes.txt. which can be used for a test run.
