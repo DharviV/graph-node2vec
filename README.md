@@ -8,3 +8,14 @@ of the algorithm as outlined in the following paper:
 > Aditya Grover and Jure Leskovec.
 > Knowledge Discovery and Data Mining, 2016.
 > 
+
+### Building the project
+
+```
+$ git clone <url>
+$ mvn clean package
+```
+
+### References:
+
+1. [node2vec: Scalable Feature Learning for Networks](http://arxiv.org/abs/1607.00653)
