@@ -16,6 +16,16 @@ $ git clone <url>
 $ mvn clean package
 ```
 
+####  Input
+
+The repository consists of a sample input file, inputnodes.txt. which can be used for a test run.
+
+Generally, the format for the input file should be of the following form:
+
+     node1_id_int 	node2_id_int 	<weight_float, optional>
+	   or
+     node1_str 	node2_str 	<weight_float, optional>, Please set the option "indexed" to false
+
 ### References:
 
 1. [node2vec: Scalable Feature Learning for Networks](http://arxiv.org/abs/1607.00653)
