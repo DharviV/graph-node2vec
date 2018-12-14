@@ -76,18 +76,6 @@ object GraphOps {
     else J(kk)
   }
 
-  lazy val createUndirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
-    Array(
-      (srcId, Array((dstId, weight))),
-      (dstId, Array((srcId, weight)))
-    )
-  }
-  
-  lazy val createDirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
-    Array(
-      (srcId, Array((dstId, weight)))
-    )
-  }
 
 
 
@@ -95,8 +83,9 @@ object GraphOps {
 
 
 
+def initTransitionProb(indexedNodes: RDD[(VertexId, NodeAttr)], indexedEdges: RDD[Edge[EdgeAttr]])
 
-def initTransitionProb(): this.type = {
+= {
       val bcP = context.broadcast(config.p)
           val bcQ = context.broadcast(config.q)
 
@@ -114,13 +103,12 @@ val graph = Graph(indexedNodes, indexedEdges)
 
  .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
                  edgeTriplet.attr.J = j
-                               edgeTriplet.attr.q = q
-                                             edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
+                 edgeTriplet.attr.q = q
+                 edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
                                                            
-                                                           edgeTriplet.attr
-                                                                       }.cache
+                 edgeTriplet.attr
+                  }.cache
 
-
-                    this }
+      this }
 
 }

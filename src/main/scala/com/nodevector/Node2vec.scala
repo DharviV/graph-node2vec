@@ -57,7 +57,9 @@ object Node2vec extends Serializable {
       }
     }.repartition(200).cache
     
-    this
+  //  this
+  //
+    GraphOps.initTransitionProb(indexedNodes, indexedEdges)
   }
   
 //  def initTransitionProb(): this.type = {
@@ -269,5 +271,22 @@ object Node2vec extends Serializable {
   def createNode2Id[T <: Any](triplets: RDD[(String, String, T)]) = triplets.flatMap { case (src, dst, weight) =>
     Try(Array(src, dst)).getOrElse(Array.empty[String])
   }.distinct().zipWithIndex()
+
+
+
+
+  lazy val createUndirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
+        Array(
+                (srcId, Array((dstId, weight))),
+                      (dstId, Array((srcId, weight)))
+                          )
+          }
+            
+            lazy val createDirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
+                  Array(
+                          (srcId, Array((dstId, weight)))
+                              )
+                    }
+
 
 }

@@ -101,12 +101,12 @@ object Main {
       
       param.cmd match {
         case Command.node2vec => Node2vec.load()
-                                         .initTransitionProb()
+                                         
                                          .randomWalk()
                                          .embedding()
                                          .save()
         case Command.randomwalk => Node2vec.load()
-                                           .initTransitionProb()
+                                           
                                            .randomWalk()
                                            .saveRandomPath()
         case Command.embedding => {
