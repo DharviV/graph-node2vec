@@ -40,7 +40,7 @@ object GraphOps {
       }
     }
 
-    while (smallBuff!=null && largeBuff!=null) {
+    while (smallBuff.nonEmpty && largeBuff.nonEmpty) {
       val small = smallBuff.remove(smallBuff.length - 1)
       val large = largeBuff.remove(largeBuff.length - 1)
 
