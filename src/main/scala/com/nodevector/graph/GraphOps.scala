@@ -1,16 +1,12 @@
 package com.nodevector.graph
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import org.apache.spark.graphx.{EdgeTriplet, Graph, _}
-
-
-import com.nodevector.graph.{GraphOps, EdgeAttr, NodeAttr}
 import com.nodevector.Main
 
 import scala.collection.mutable.ArrayBuffer
 
 object GraphOps {
-
+  
+  
   var context: SparkContext = null
   var config: Main.Params = null
 
@@ -24,7 +20,9 @@ object GraphOps {
              }
   
   
-   def setupAlias(nodeWeights: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
+  
+  
+  def setupAlias(nodeWeights: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
     val K = nodeWeights.length
     val J = Array.fill(K)(0)
     val q = Array.fill(K)(0.0)
@@ -48,63 +46,50 @@ object GraphOps {
 
       J(small) = large
       q(large) = q(large) + q(small) - 1.0
-      if (q(large) < 1.0) 
-        {smallBuff.append(large)}
+      if (q(large) < 1.0) smallBuff.append(large)
       else largeBuff.append(large)
     }
 
     (J, q)
   }
-   
-def setupEdgeAlias(srcId: Long, srcNeighbors: Array[(Long, Double)], dstNeighbors: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
+  
+
+  def setupEdgeAlias(p: Double = 1.0, q: Double = 1.0)(srcId: Long, srcNeighbors: Array[(Long, Double)], dstNeighbors: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
+    val neighbors_ = dstNeighbors.map { case (dstNeighborId, weight) =>
+      var unnormProb = weight / q
     
-   val p=1.0.toDouble
-   val q=1.0.toDouble
-   val neighbors_ = dstNeighbors.map { case (dstNeighborId, weight) =>
-   var unnormProb = weight / q
-   if (srcId == dstNeighborId) unnormProb = weight / p
-    else if (srcNeighbors.exists(_._1 == dstNeighborId)) unnormProb = weight
+      
+      if (srcId == dstNeighborId) unnormProb = weight / p
+      
+      
+      else if (srcNeighbors.exists(_._1 == dstNeighborId)) unnormProb = weight
 
-    (dstNeighborId, unnormProb)
+      (dstNeighborId, unnormProb)
     }
-
 
     setupAlias(neighbors_)
   }
 
   def drawAlias(J: Array[Int], q: Array[Double]): Int = {
     val K = J.length
+  
+    
     val kk = math.floor(math.random * K).toInt
 
     if (math.random < q(kk)) kk
     else J(kk)
   }
+
+  val createUndirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
+    Array(
+      (srcId, Array((dstId, weight))),
+      (dstId, Array((srcId, weight)))
+    )
+  }
   
-  
-  
-def initTransitionProb(indexedNodes: RDD[(VertexId, NodeAttr)], indexedEdges: RDD[Edge[EdgeAttr]])= {
-      val bcP = context.broadcast(config.p)
-      val bcQ = context.broadcast(config.q)
-
-val graph = Graph(indexedNodes, indexedEdges)
-            .mapVertices[NodeAttr] { case (vertexId, clickNode) =>
-            val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
-            val nextNodeIndex = GraphOps.drawAlias(j, q)
-            clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
-
-            clickNode
-         }
-      
-      
- 
- .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
-                 edgeTriplet.attr.J = j
-                 edgeTriplet.attr.q = q
-                 edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
-
-                 edgeTriplet.attr
-                  }.cache
-
-      this }
-}      
-      
+  val createDirectedEdge = (srcId: Long, dstId: Long, weight: Double) => {
+    Array(
+      (srcId, Array((dstId, weight)))
+    )
+  }
+}
