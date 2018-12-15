@@ -2,11 +2,10 @@ package com.nodevector.graph
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.graphx.{EdgeTriplet, Graph, _}
+
+
 import com.nodevector.graph.{GraphOps, EdgeAttr, NodeAttr}
 import com.nodevector.Main
-
-
-
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -20,50 +19,55 @@ object GraphOps {
   def setup(context: SparkContext, param: Main.Params) = {
         this.context = context
         this.config = param
-                
+
         this
              }
-
-
-  def setupAlias(nodeWeights: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
+  
+  
+   def setupAlias(nodeWeights: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
     val K = nodeWeights.length
     val J = Array.fill(K)(0)
     val q = Array.fill(K)(0.0)
 
-    val smaller = new ArrayBuffer[Int]()
-    val larger = new ArrayBuffer[Int]()
+    val smallBuff = new ArrayBuffer[Int]()
+    val largeBuff = new ArrayBuffer[Int]()
 
     val sum = nodeWeights.map(_._2).sum
     nodeWeights.zipWithIndex.foreach { case ((nodeId, weight), i) =>
       q(i) = K * weight / sum
       if (q(i) < 1.0) {
-        smaller.append(i)
+        smallBuff.append(i)
       } else {
-        larger.append(i)
+        largeBuff.append(i)
       }
     }
 
-    while (smaller.nonEmpty && larger.nonEmpty) {
-      val small = smaller.remove(smaller.length - 1)
-      val large = larger.remove(larger.length - 1)
+    while (smallBuff!=null && largeBuff!=null) {
+      val small = smallBuff.remove(smallBuff.length - 1)
+      val large = largeBuff.remove(largeBuff.length - 1)
 
       J(small) = large
       q(large) = q(large) + q(small) - 1.0
-      if (q(large) < 1.0) smaller.append(large)
-      else larger.append(large)
+      if (q(large) < 1.0) 
+        {smallBuff.append(large)}
+      else largeBuff.append(large)
     }
 
     (J, q)
   }
+   
+def setupEdgeAlias(srcId: Long, srcNeighbors: Array[(Long, Double)], dstNeighbors: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
+    
+   val p=1.0.toDouble
+   val q=1.0.toDouble
+   val neighbors_ = dstNeighbors.map { case (dstNeighborId, weight) =>
+   var unnormProb = weight / q
+   if (srcId == dstNeighborId) unnormProb = weight / p
+    else if (srcNeighbors.exists(_._1 == dstNeighborId)) unnormProb = weight
 
-  def setupEdgeAlias(p: Double = 1.0, q: Double = 1.0)(srcId: Long, srcNeighbors: Array[(Long, Double)], dstNeighbors: Array[(Long, Double)]): (Array[Int], Array[Double]) = {
-    val neighbors_ = dstNeighbors.map { case (dstNeighborId, weight) =>
-      var unnormProb = weight / q
-      if (srcId == dstNeighborId) unnormProb = weight / p
-      else if (srcNeighbors.exists(_._1 == dstNeighborId)) unnormProb = weight
-
-      (dstNeighborId, unnormProb)
+    (dstNeighborId, unnormProb)
     }
+
 
     setupAlias(neighbors_)
   }
@@ -75,40 +79,32 @@ object GraphOps {
     if (math.random < q(kk)) kk
     else J(kk)
   }
-
-
-
-
-
-
-
-
-def initTransitionProb(indexedNodes: RDD[(VertexId, NodeAttr)], indexedEdges: RDD[Edge[EdgeAttr]])
-
-= {
+  
+  
+  
+def initTransitionProb(indexedNodes: RDD[(VertexId, NodeAttr)], indexedEdges: RDD[Edge[EdgeAttr]])= {
       val bcP = context.broadcast(config.p)
-          val bcQ = context.broadcast(config.q)
+      val bcQ = context.broadcast(config.q)
 
 val graph = Graph(indexedNodes, indexedEdges)
             .mapVertices[NodeAttr] { case (vertexId, clickNode) =>
-                            val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
-                                          val nextNodeIndex = GraphOps.drawAlias(j, q)
-                                                        clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
-                                                                      
-                                                                      clickNode
-                                                                                  }
+            val (j, q) = GraphOps.setupAlias(clickNode.neighbors)
+            val nextNodeIndex = GraphOps.drawAlias(j, q)
+            clickNode.path = Array(vertexId, clickNode.neighbors(nextNodeIndex)._1)
 
-
-
-
+            clickNode
+         }
+      
+      
+ 
  .mapTriplets { edgeTriplet: EdgeTriplet[NodeAttr, EdgeAttr] =>val (j, q) = GraphOps.setupEdgeAlias(bcP.value, bcQ.value)(edgeTriplet.srcId, edgeTriplet.srcAttr.neighbors, edgeTriplet.dstAttr.neighbors)
                  edgeTriplet.attr.J = j
                  edgeTriplet.attr.q = q
                  edgeTriplet.attr.dstNeighbors = edgeTriplet.dstAttr.neighbors.map(_._1)
-                                                           
+
                  edgeTriplet.attr
                   }.cache
 
       this }
-
-}
+}      
+      
